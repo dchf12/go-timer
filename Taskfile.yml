@@ -3,9 +3,11 @@ version: '3'
 vars:
   BINARY_NAME:
     sh: basename $(pwd)
-  COVERAGE_FILE: coverage.out
-  GOOS: darwin
-  GOARCH: arm64
+  BUILD_DIR: 'build'
+  OUTPUT_DIR: '{{.BUILD_DIR}}/{{.BINARY_NAME}}'
+  COVERAGE_FILE: '{{.BUILD_DIR}}/coverage.out'
+  GOOS: 'darwin'
+  GOARCH: 'arm64'
 
 tasks:
   tidy:
@@ -14,30 +16,33 @@ tasks:
       - go mod tidy
 
   build:
-    desc: 'デバッグ用のビルドを行います'
+    desc: 'デバッグ用のビルドを行い、成果物を build/ ディレクトリに出力します'
     env:
       GOOS: '{{.GOOS}}'
       GOARCH: '{{.GOARCH}}'
     cmds:
-      - go build -gcflags="all=-N -l" -o {{.BINARY_NAME}} -v 
+      - mkdir -p {{.BUILD_DIR}}
+      - go build -gcflags="all=-N -l" -o {{.OUTPUT_PATH}} -v
 
   build-release:
-    desc: 'リリース用のビルドを行います'
+    desc: 'リリース用のビルドを行い、成果物を build/ ディレクトリに出力します'
     env:
       GOOS: '{{.GOOS}}'
       GOARCH: '{{.GOARCH}}'
     cmds:
-      - go build -ldflags="-s -w" -o {{.BINARY_NAME}} -v
+      - mkdir -p {{.BUILD_DIR}}
+      - go build -ldflags="-s -w" -o {{.OUTPUT_PATH}} -v
 
   run:
     desc: 'ビルド後、アプリケーションを実行します'
     deps: [build]
     cmds:
-      - ./{{.BINARY_NAME}}
+      - ./{{.OUTPUT_PATH}}
 
   test:
-    desc: 'テストを実行します'
+    desc: 'テストを実行し、カバレッジ情報を生成します'
     cmds:
+      - mkdir -p {{.BUILD_DIR}}
       - go test -race -v -coverprofile={{.COVERAGE_FILE}} ./...
 
   bench:
@@ -54,9 +59,7 @@ tasks:
   clean:
     desc: 'ビルド生成物とカバレッジファイルを削除します'
     cmds:
-      - go clean
-      - rm -f {{.BINARY_NAME}}
-      - rm -f {{.COVERAGE_FILE}}
+      - rm -rf {{.BUILD_DIR}}
 
   help:
     desc: '利用可能なタスクの一覧を表示します'

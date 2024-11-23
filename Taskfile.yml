@@ -1,0 +1,64 @@
+version: '3'
+
+vars:
+  BINARY_NAME:
+    sh: basename $(pwd)
+  COVERAGE_FILE: coverage.out
+  GOOS: darwin
+  GOARCH: arm64
+
+tasks:
+  tidy:
+    desc: '依存関係の整理を行います'
+    cmds:
+      - go mod tidy
+
+  build:
+    desc: 'デバッグ用のビルドを行います'
+    env:
+      GOOS: '{{.GOOS}}'
+      GOARCH: '{{.GOARCH}}'
+    cmds:
+      - go build -gcflags="all=-N -l" -o {{.BINARY_NAME}} -v 
+
+  build-release:
+    desc: 'リリース用のビルドを行います'
+    env:
+      GOOS: '{{.GOOS}}'
+      GOARCH: '{{.GOARCH}}'
+    cmds:
+      - go build -ldflags="-s -w" -o {{.BINARY_NAME}} -v
+
+  run:
+    desc: 'ビルド後、アプリケーションを実行します'
+    deps: [build]
+    cmds:
+      - ./{{.BINARY_NAME}}
+
+  test:
+    desc: 'テストを実行します'
+    cmds:
+      - go test -race -v -coverprofile={{.COVERAGE_FILE}} ./...
+
+  bench:
+    desc: 'ベンチマークテストを実行します'
+    cmds:
+      - go test -bench=. -benchmem ./...
+
+  cover:
+    desc: 'テストを実行し、カバレッジ情報を表示します'
+    deps: [test]
+    cmds:
+      - go tool cover -func={{.COVERAGE_FILE}}
+
+  clean:
+    desc: 'ビルド生成物とカバレッジファイルを削除します'
+    cmds:
+      - go clean
+      - rm -f {{.BINARY_NAME}}
+      - rm -f {{.COVERAGE_FILE}}
+
+  help:
+    desc: '利用可能なタスクの一覧を表示します'
+    cmds:
+      - task --list

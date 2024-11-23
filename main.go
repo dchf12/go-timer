@@ -21,7 +21,7 @@ func main() {
 	entry := widget.NewEntry()
 	entry.SetPlaceHolder("Enter time in seconds")
 
-	startButton := widget.NewButton("Start", func() {
+	secondsButton := widget.NewButton("秒で開始", func() {
 		seconds, err := strconv.Atoi(entry.Text)
 		if err != nil {
 			popup := widget.NewPopUp(canvas.NewText("秒数は整数で指定してください", nil), window.Canvas())
@@ -45,6 +45,38 @@ func main() {
 			time.AfterFunc(1*time.Second, func() {
 				completedPopup.Hide()
 			})
+
+			// タイマー完了時に音を鳴らす
+			_ = exec.Command("afplay", "/System/Library/Sounds/Ping.aiff").Run()
+		}()
+	})
+
+	minutesButton := widget.NewButton("分で開始", func() {
+		minutes, err := strconv.Atoi(entry.Text)
+		if err != nil {
+			popup := widget.NewPopUp(canvas.NewText("分数は整数で指定してください", nil), window.Canvas())
+			popup.Show()
+			time.AfterFunc(1*time.Second, func() {
+				popup.Hide()
+			})
+			return
+		}
+
+		popup := widget.NewPopUp(canvas.NewText(fmt.Sprintf("%d分のタイマー開始", minutes), nil), window.Canvas())
+		popup.Show()
+		time.AfterFunc(1*time.Second, func() {
+			popup.Hide()
+		})
+
+		go func() {
+			time.Sleep(time.Duration(minutes) * time.Minute)
+			completedPopup := widget.NewPopUp(canvas.NewText("タイマー終了", nil), window.Canvas())
+			completedPopup.Show()
+			time.AfterFunc(1*time.Second, func() {
+				completedPopup.Hide()
+			})
+
+			// タイマー完了時に音を鳴らす
 			_ = exec.Command("afplay", "/System/Library/Sounds/Ping.aiff").Run()
 		}()
 	})
@@ -52,7 +84,10 @@ func main() {
 	window.SetContent(container.NewVBox(
 		widget.NewLabel("Timer"),
 		entry,
-		startButton,
+		container.NewHBox(
+			secondsButton,
+			minutesButton,
+		),
 	))
 
 	window.ShowAndRun()

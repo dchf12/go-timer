@@ -13,6 +13,11 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+const (
+	Second = "秒"
+	Minute = "分"
+)
+
 func main() {
 	app := app.New()
 	window := app.NewWindow("timer")
@@ -21,39 +26,56 @@ func main() {
 	entry := widget.NewEntry()
 	entry.SetPlaceHolder("Enter time in seconds")
 
-	startButton := widget.NewButton("Start", func() {
-		seconds, err := strconv.Atoi(entry.Text)
-		if err != nil {
-			popup := widget.NewPopUp(canvas.NewText("秒数は整数で指定してください", nil), window.Canvas())
-			popup.Show()
-			time.AfterFunc(1*time.Second, func() {
-				popup.Hide()
-			})
-			return
-		}
+	secondsButton := widget.NewButton("秒で開始", func() {
+		handleTimer(entry.Text, Second, window)
+	})
 
-		popup := widget.NewPopUp(canvas.NewText(fmt.Sprintf("%d秒のタイマー開始", seconds), nil), window.Canvas())
-		popup.Show()
-		time.AfterFunc(1*time.Second, func() {
-			popup.Hide()
-		})
-
-		go func() {
-			time.Sleep(time.Duration(seconds) * time.Second)
-			completedPopup := widget.NewPopUp(canvas.NewText("タイマー終了", nil), window.Canvas())
-			completedPopup.Show()
-			time.AfterFunc(1*time.Second, func() {
-				completedPopup.Hide()
-			})
-			_ = exec.Command("afplay", "/System/Library/Sounds/Ping.aiff").Run()
-		}()
+	minutesButton := widget.NewButton("分で開始", func() {
+		handleTimer(entry.Text, Minute, window)
 	})
 
 	window.SetContent(container.NewVBox(
 		widget.NewLabel("Timer"),
 		entry,
-		startButton,
+		container.NewHBox(
+			secondsButton,
+			minutesButton,
+		),
 	))
 
 	window.ShowAndRun()
+}
+
+func handleTimer(input string, unit string, window fyne.Window) {
+	timeValue, err := strconv.Atoi(input)
+	if err != nil {
+		showPopup(window, fmt.Sprintf("%sは整数で指定してください", unit))
+		return
+	}
+
+	showPopup(window, fmt.Sprintf("%d%sのタイマー開始", timeValue, unit))
+
+	go func() {
+		var duration time.Duration
+		if unit == Second {
+			duration = time.Duration(timeValue) * time.Second
+		} else if unit == Minute {
+			duration = time.Duration(timeValue) * time.Minute
+		}
+		time.Sleep(duration)
+		showPopup(window, "タイマー終了")
+		playCompletionSound()
+	}()
+}
+
+func showPopup(window fyne.Window, message string) {
+	popup := widget.NewPopUp(canvas.NewText(message, nil), window.Canvas())
+	popup.Show()
+	time.AfterFunc(1*time.Second, func() {
+		popup.Hide()
+	})
+}
+
+func playCompletionSound() {
+	_ = exec.Command("afplay", "/System/Library/Sounds/Ping.aiff").Run()
 }

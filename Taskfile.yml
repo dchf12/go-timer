@@ -22,7 +22,7 @@ tasks:
       GOARCH: '{{.GOARCH}}'
     cmds:
       - mkdir -p {{.BUILD_DIR}}
-      - go build -gcflags="all=-N -l" -o {{.OUTPUT_PATH}} -v
+      - go build -gcflags="all=-N -l" -o {{.OUTPUT_DIR}}
 
   build-release:
     desc: 'リリース用のビルドを行い、成果物を build/ ディレクトリに出力します'
@@ -31,13 +31,13 @@ tasks:
       GOARCH: '{{.GOARCH}}'
     cmds:
       - mkdir -p {{.BUILD_DIR}}
-      - go build -ldflags="-s -w" -o {{.OUTPUT_PATH}} -v
+      - go build -ldflags="-s -w" -o {{.OUTPUT_DIR}}
 
   run:
     desc: 'ビルド後、アプリケーションを実行します'
     deps: [build]
     cmds:
-      - ./{{.OUTPUT_PATH}}
+      - ./{{.OUTPUT_DIR}}
 
   test:
     desc: 'テストを実行し、カバレッジ情報を生成します'
